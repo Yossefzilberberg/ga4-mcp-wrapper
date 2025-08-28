@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+google-analytics-data==0.18.19
+google-auth
+mcp==1.13.1
+sse-starlette
+python-dotenv
