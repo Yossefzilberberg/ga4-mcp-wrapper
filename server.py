@@ -6,7 +6,6 @@ srv = Server("smoke-test")
 
 @srv.tool()
 def search(q: str = ""):
-    # החזרה מינימלית שמספיקה ל-ChatGPT לאמת את הקונקטור
     return [{"id": "demo", "title": "OK", "url": "demo", "snippet": "ready"}]
 
 @srv.tool()
