@@ -1,30 +1,17 @@
 import os, json, anyio
 from typing import Dict, Any, List, Optional
-from google.analytics.data_v1beta import (
-    BetaAnalyticsDataClient,
-    RunReportRequest,
-    DateRange,
-    Dimension,
-    Metric,
-)
-from google.oauth2 import service_account
 
-# === GA4 client: lazy singleton ===
-_SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
-_GA_CLIENT: Optional[BetaAnalyticsDataClient] = None
-
-def _get_ga_client() -> BetaAnalyticsDataClient:
-    global _GA_CLIENT
-    if _GA_CLIENT is not None:
-        return _GA_CLIENT
+# === Helpers: lazy imports so init won't crash ===
+def _ga_client():
+    from google.oauth2 import service_account
+    from google.analytics.data_v1beta import BetaAnalyticsDataClient
     creds_json = os.environ.get("GA_CREDENTIALS_JSON")
     if not creds_json:
-        # אל תפיל את השרת באתחול; תן הודעה ברורה בקריאה לכלים
         raise RuntimeError("GA_CREDENTIALS_JSON is missing in environment")
     info = json.loads(creds_json)
-    creds = service_account.Credentials.from_service_account_info(info, scopes=_SCOPES)
-    _GA_CLIENT = BetaAnalyticsDataClient(credentials=creds)
-    return _GA_CLIENT
+    scopes = ["https://www.googleapis.com/auth/analytics.readonly"]
+    creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+    return BetaAnalyticsDataClient(credentials=creds)
 
 def _prop_id(prop: Optional[str]) -> str:
     pid = prop or os.environ.get("GOOGLE_ANALYTICS_PROPERTY_ID")
@@ -33,7 +20,8 @@ def _prop_id(prop: Optional[str]) -> str:
     return pid if str(pid).startswith("properties/") else f"properties/{pid}"
 
 def _top_pages(property_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-    client = _get_ga_client()
+    from google.analytics.data_v1beta import RunReportRequest, DateRange, Dimension, Metric
+    client = _ga_client()
     req = RunReportRequest(
         property=property_id,
         date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
@@ -43,19 +31,17 @@ def _top_pages(property_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         limit=limit,
     )
     resp = client.run_report(req)
-    out = []
-    for r in resp.rows:
-        out.append({
-            "id": r.dimension_values[0].value or "/",
-            "title": r.dimension_values[1].value or "(no title)",
-            "url": r.dimension_values[0].value or "/",
-            "snippet": f"views={r.metric_values[0].value}",
-            "views": int(r.metric_values[0].value or 0),
-        })
-    return out
+    return [{
+        "id": r.dimension_values[0].value or "/",
+        "title": r.dimension_values[1].value or "(no title)",
+        "url": r.dimension_values[0].value or "/",
+        "snippet": f"views={r.metric_values[0].value}",
+        "views": int(r.metric_values[0].value or 0),
+    } for r in resp.rows]
 
 def _page_detail(property_id: str, path: str) -> Dict[str, Any]:
-    client = _get_ga_client()
+    from google.analytics.data_v1beta import RunReportRequest, DateRange, Dimension, Metric
+    client = _ga_client()
     req = RunReportRequest(
         property=property_id,
         date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
