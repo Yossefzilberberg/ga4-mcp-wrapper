@@ -1,7 +1,7 @@
 import os, json, anyio
 from typing import Dict, Any, List, Optional
 
-# === Helpers: lazy imports so init won't crash ===
+# === Lazy GA client: לא מפיל את השרת באתחול ===
 def _ga_client():
     from google.oauth2 import service_account
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
@@ -63,7 +63,7 @@ def _page_detail(property_id: str, path: str) -> Dict[str, Any]:
         },
     }
 
-# === MCP server over STDIO ===
+# === MCP STDIO server ===
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
