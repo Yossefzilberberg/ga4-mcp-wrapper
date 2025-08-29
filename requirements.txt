@@ -1,6 +1,5 @@
-fastapi
-uvicorn
+mcp==1.13.1
+mcp-proxy==0.8.2
 google-analytics-data==0.18.19
 google-auth
-mcp==1.13.1
-mcp[server]
+python-dotenv
